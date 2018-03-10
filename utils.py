@@ -56,3 +56,31 @@ def adjust_sequence_times_and_merge(seq1, seq2, delta_time):
     seq1.MergeFrom(retimed_seq2)
     
     return seq1 
+
+def generate_backbone(bpm,beat_per_bar,bar_per_emphasis,noise_buildup,n_bars_buildup, progression):
+    structure = []
+
+    current_bar = 0
+    for phase in progression:
+        print("handline" + str(phase))
+        for b in range(phase["duration"]):
+            bar_properties = phase.copy()
+            del bar_properties["tracks"]
+            for t,v in phase["tracks"]:
+                if v == "yes":
+                    bar_properties[t] = 1.0
+                else:
+                    bar_properties[t] = 0.0
+
+                n_bars_buildup_here = min(n_bars_buildup,phase["duration"])
+                bar_properties["buildup_factor"] = max(0.0, (float(b) - phase["duration"] + float(n_bars_buildup_here) )/float(n_bars_buildup_here))
+                bar_properties["current_bar"] = current_bar
+                bar_properties["final_bar"] = b+1 == phase["duration"]
+                bar_properties["beat_per_bar"] = beat_per_bar
+                bar_properties["noise_buildup"] = noise_buildup
+
+            structure.append(bar_properties)
+
+            current_bar += 1
+            
+    return structure
