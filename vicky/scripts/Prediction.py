@@ -5,6 +5,7 @@
 
 """ This module generates notes for a midi file using the
     trained neural network """
+import os
 import pickle
 import numpy
 from music21 import instrument, note, stream, chord
@@ -14,6 +15,8 @@ from keras.layers import Dropout
 from keras.layers import LSTM
 from keras.layers import Activation
 import tensorflow as tf
+
+# <codecell>
 
 def generate():
     """ Generate a piano midi file """
@@ -30,6 +33,8 @@ def generate():
     model = create_network(normalized_input, n_vocab)
     prediction_output = generate_notes(model, network_input, pitchnames, n_vocab)
     create_midi(prediction_output)
+
+# <codecell>
 
 def prepare_sequences(notes, pitchnames, n_vocab):
     """ Prepare the sequences used by the Neural Network """
@@ -75,9 +80,11 @@ def create_network(network_input, n_vocab):
         model.compile(loss='categorical_crossentropy', optimizer='rmsprop')
 
         # Load the weights to each node
-        model.load_weights('weights-improvement-99-0.1873-bigger.hdf5')
+        model.load_weights('weights-improvement-100-0.1836-bigger.hdf5')
 
         return model
+
+# <codecell>
 
 def generate_notes(model, network_input, pitchnames, n_vocab):
     """ Generate notes from the neural network based on a sequence of notes """
@@ -86,7 +93,7 @@ def generate_notes(model, network_input, pitchnames, n_vocab):
 
     int_to_note = dict((number, note) for number, note in enumerate(pitchnames))
 
-    pattern = network_input[start]
+    pattern = list(network_input[start])
     prediction_output = []
 
     # generate 500 notes
@@ -105,7 +112,7 @@ def generate_notes(model, network_input, pitchnames, n_vocab):
 
     return prediction_output
 
-def create_midi(prediction_output):
+def create_midi(prediction_output, output_midi_fname):
     """ convert the output from the prediction to notes and create a midi file
         from the notes """
     offset = 0
@@ -141,8 +148,7 @@ def create_midi(prediction_output):
 
     midi_stream = stream.Stream(output_notes)
 
-    midi_stream.write('midi', fp='test_output_non_repetitive_note.mid')
+    midi_stream.write('midi', fp=os.path.join('output_midi',output_midi_fname+'.mid'))
 
 if __name__ == '__main__':
     generate()
-
