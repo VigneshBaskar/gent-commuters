@@ -13,6 +13,7 @@ from keras.layers import Dense
 from keras.layers import Dropout
 from keras.layers import LSTM
 from keras.layers import Activation
+import tensorflow as tf
 
 def generate():
     """ Generate a piano midi file """
@@ -55,26 +56,28 @@ def prepare_sequences(notes, pitchnames, n_vocab):
 
 def create_network(network_input, n_vocab):
     """ create the structure of the neural network """
-    model = Sequential()
-    model.add(LSTM(
-        512,
-        input_shape=(network_input.shape[1], network_input.shape[2]),
-        return_sequences=True
-    ))
-    model.add(Dropout(0.3))
-    model.add(LSTM(512, return_sequences=True))
-    model.add(Dropout(0.3))
-    model.add(LSTM(512))
-    model.add(Dense(256))
-    model.add(Dropout(0.3))
-    model.add(Dense(n_vocab))
-    model.add(Activation('softmax'))
-    model.compile(loss='categorical_crossentropy', optimizer='rmsprop')
+    with tf.device('/cpu:0'):
 
-    # Load the weights to each node
-    model.load_weights('weights-improvement-01-4.7498-bigger.hdf5')
+        model = Sequential()
+        model.add(LSTM(
+            512,
+            input_shape=(network_input.shape[1], network_input.shape[2]),
+            return_sequences=True
+        ))
+        model.add(Dropout(0.3))
+        model.add(LSTM(512, return_sequences=True))
+        model.add(Dropout(0.3))
+        model.add(LSTM(512))
+        model.add(Dense(256))
+        model.add(Dropout(0.3))
+        model.add(Dense(n_vocab))
+        model.add(Activation('softmax'))
+        model.compile(loss='categorical_crossentropy', optimizer='rmsprop')
 
-    return model
+        # Load the weights to each node
+        model.load_weights('weights-improvement-99-0.1873-bigger.hdf5')
+
+        return model
 
 def generate_notes(model, network_input, pitchnames, n_vocab):
     """ Generate notes from the neural network based on a sequence of notes """
@@ -123,17 +126,22 @@ def create_midi(prediction_output):
             output_notes.append(new_chord)
         # pattern is a note
         else:
-            new_note = note.Note(pattern)
-            new_note.offset = offset
-            new_note.storedInstrument = instrument.Piano()
-            output_notes.append(new_note)
+            try:
+                new_note = note.Note(pattern)
+                if new_note!=output_notes[-1]:
+                    new_note.offset = offset
+                    new_note.storedInstrument = instrument.Piano()
+                    output_notes.append(new_note)
+            except Exception as e:
+                print(e)
+                
 
         # increase offset each iteration so that notes do not stack
         offset += 0.5
 
     midi_stream = stream.Stream(output_notes)
 
-    midi_stream.write('midi', fp='test_output.mid')
+    midi_stream.write('midi', fp='test_output_non_repetitive_note.mid')
 
 if __name__ == '__main__':
     generate()
