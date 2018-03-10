@@ -1,5 +1,5 @@
 # Byte-compiled / optimized / DLL files
-nohup.out
+vicky/nohup.out
 *.hdf5
 __pycache__/
 *.py[cod]
