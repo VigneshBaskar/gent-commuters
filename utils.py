@@ -11,10 +11,17 @@ from magenta.music.sequences_lib import *
 import magenta.music as mm
 
 # Constants.
-BUNDLE_DIR = '/home/jovyan/models/'
-MODEL_NAME = 'drum_kit'
-BUNDLE_NAME = 'drum_kit_rnn.mag'
-
+def produce_drum_generator():
+    BUNDLE_DIR = '/home/jovyan/models/'
+    MODEL_NAME = 'drum_kit'
+    BUNDLE_NAME = 'drum_kit_rnn.mag'
+    mm.notebook_utils.download_bundle(BUNDLE_NAME, BUNDLE_DIR)
+    bundle = mm.sequence_generator_bundle.read_bundle_file(os.path.join(BUNDLE_DIR, BUNDLE_NAME))
+    drum_generator_map = drums_rnn_sequence_generator.get_generator_map()
+    drum_generator = drum_generator_map[MODEL_NAME](checkpoint=None, bundle=bundle)
+    
+    return drum_generator
+    
 def compute_time(qpm=120, nsteps=16, steps_per_quarter=4):
     seconds_per_step = 60.0 / qpm / steps_per_quarter
     total_seconds = nsteps * seconds_per_step
@@ -62,7 +69,7 @@ def generate_backbone(bpm,beat_per_bar,bar_per_emphasis,noise_buildup,n_bars_bui
 
     current_bar = 0
     for phase in progression:
-        print("handline" + str(phase))
+        print("handling " + str(phase))
         for b in range(phase["duration"]):
             bar_properties = phase.copy()
             del bar_properties["tracks"]
