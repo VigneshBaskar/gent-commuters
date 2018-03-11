@@ -3,12 +3,28 @@ import magenta
 from magenta.models.drums_rnn import drums_rnn_sequence_generator
 from magenta.protobuf import generator_pb2
 from magenta.protobuf import music_pb2
+import pretty_midi
+import math
+
+from magenta.music.midi_io import sequence_proto_to_midi_file, sequence_proto_to_pretty_midi
+import pickle
 
 import pandas as pd
 
 from magenta.music.sequences_lib import *
 
 import magenta.music as mm
+
+import scipy
+import subprocess
+import IPython
+
+def generate_mp3(total_wave,ext="_bid"):
+    scipy.io.wavfile.write('total'+ext+'.wav', rate=44100, data=total_wave)
+    subprocess.call(['lame','-h','total'+ext+'.wav','total'+ext+'.mp3'])
+    out = IPython.display.Audio('total'+ext+'.mp3')
+    return out
+    
 
 # Constants.
 def produce_drum_generator():
@@ -64,30 +80,40 @@ def adjust_sequence_times_and_merge(seq1, seq2, delta_time):
     
     return seq1 
 
-def generate_backbone(bpm,beat_per_bar,bar_per_emphasis,noise_buildup,n_bars_buildup, progression):
+def generate_backbone(bpm, beat_per_bar, bar_per_emphasis, n_bars_buildup, progression):
     structure = []
 
     current_bar = 0
+    start_time = 0.0
     for phase in progression:
         print("handling " + str(phase))
         for b in range(phase["duration"]):
+            
             bar_properties = phase.copy()
             del bar_properties["tracks"]
+            
+            end_time = start_time + 60.0 * float(beat_per_bar)/bpm
+            
             for t,v in phase["tracks"]:
                 if v == "yes":
                     bar_properties[t] = 1.0
                 else:
                     bar_properties[t] = 0.0
 
+                buildup = phase["buildup"]
                 n_bars_buildup_here = min(n_bars_buildup,phase["duration"])
-                bar_properties["buildup_factor"] = max(0.0, (float(b) - phase["duration"] + float(n_bars_buildup_here) )/float(n_bars_buildup_here))
+                bar_properties["buildup_factor"] = buildup*max(0.0, (float(b) - phase["duration"] + float(n_bars_buildup_here) )/float(n_bars_buildup_here))
                 bar_properties["current_bar"] = current_bar
                 bar_properties["final_bar"] = b+1 == phase["duration"]
                 bar_properties["beat_per_bar"] = beat_per_bar
-                bar_properties["noise_buildup"] = noise_buildup
+                bar_properties["noise_buildup"] = buildup
+                
+                bar_properties["start_time"] = start_time
+                bar_properties["end_time"]  = end_time
 
             structure.append(bar_properties)
 
             current_bar += 1
+            start_time=end_time
             
     return structure
