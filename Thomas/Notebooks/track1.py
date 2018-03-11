@@ -15,3 +15,13 @@ progression = [
     {"part":"verse", "buildup": 0.5, "duration": 6,  "tracks":[("base", "yes"), ("chords", "yes"), ("drums1", "yes"), ("drums2", "yes"), ("melody1", "yes"), ("melody2", "yes")]},
     {"part":"verse", "buildup": 0.0, "duration": 6,  "tracks":[("base", "yes"), ("chords", "yes"), ("drums1", "yes"), ("drums2", "no") , ("melody1", "yes"), ("melody2", "no") ]}
 ]
+
+def track_primer(drum, bar):
+    clonk = 49 if bar["final_bar"] else 42
+
+    if drum == "drum1":
+        primer = [(35,),(),(42,),(),(35,),(),(clonk,),()]
+    elif drum == "drum2":
+        primer = [(46,),(42,),(46,42,),(42,),(46,),(42,),(46,clonk,),(42,)]
+        
+    return primer
